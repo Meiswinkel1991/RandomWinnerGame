@@ -93,7 +93,7 @@ export default function Home() {
       );
 
       setLoading(true);
-      const tx = await gameContract.startGame(maxPlayers, entryFee);
+      const tx = await gameContract.startGame(maxPlayer, entryFee);
       await tx.wait();
       setLoading(false);
     } catch (err) {
@@ -144,7 +144,7 @@ export default function Home() {
       const _gameStarted = await gameContract.gameStarted();
 
       const _gameArray = await subgraphQuery(FETCH_CREATED_GAME());
-      if (_gameArray.length > 0) {
+      if (_gameArray) {
         const _game = _gameArray.games[0];
         let _logs = [];
 
@@ -173,9 +173,9 @@ export default function Home() {
 
         setLogs(_logs);
         setPlayers(_game.players);
-        setGameStarted(_gameStarted);
         forceUpdate();
       }
+      setGameStarted(_gameStarted);
     } catch (err) {
       console.error(err);
     }
