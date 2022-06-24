@@ -9,6 +9,7 @@ export async function subgraphQuery(query) {
       console.error(response.data.errors);
       throw new Error(`Erroir making subgraph query ${response.data.errors} `);
     }
+    return response.data.data;
   } catch (err) {
     console.error(error);
     throw new Error(`Could not query the subgraph ${error.message}`);

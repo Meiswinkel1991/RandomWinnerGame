@@ -19,7 +19,7 @@ export default function Home() {
 
   /** RandomWinnerGame States */
   const [entryFee, setEntryFee] = useState(zero);
-  const [maxPlayer, setMaxPlayer] = useState(0);
+  const [maxPlayers, setMaxPlayers] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
   const [players, setPlayers] = useState([]);
   const [winner, setWinner] = useState();
@@ -93,7 +93,7 @@ export default function Home() {
       );
 
       setLoading(true);
-      const tx = await gameContract.startGame(maxPlayer, entryFee);
+      const tx = await gameContract.startGame(maxPlayers, entryFee);
       await tx.wait();
       setLoading(false);
     } catch (err) {
@@ -118,7 +118,7 @@ export default function Home() {
       const tx = await gameContract.joinGame({
         value: entryFee,
       });
-      tx.wait();
+      await tx.wait();
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -132,52 +132,50 @@ export default function Home() {
    */
   const checkIfGameStarted = async () => {
     try {
+      // Get the provider from web3Modal, which in our case is MetaMask
+      // No need for the Signer here, as we are only reading state from the blockchain
       const provider = await getProviderOrSigner();
-
-      const gameContract = new Contract(
+      // We connect to the Contract using a Provider, so we will only
+      // have read-only access to the Contract
+      const randomGameNFTContract = new Contract(
         RANDOM_GAME_NFT_CONTRACT_ADDRESS,
         abi,
         provider
       );
-
-      //read the gameStarted boolean from the contrac
-      const _gameStarted = await gameContract.gameStarted();
+      // read the gameStarted boolean from the contract
+      const _gameStarted = await randomGameNFTContract.gameStarted();
 
       const _gameArray = await subgraphQuery(FETCH_CREATED_GAME());
-      if (_gameArray) {
-        const _game = _gameArray.games[0];
-        let _logs = [];
-
-        // initialize the logs array and query the graph for current gameID
-        if (gameStarted) {
-          _logs = [`Game hast started with ID: ${_game.id}`];
-          if (_game.players && _game.players.length > 0) {
-            _logs.push(
-              `${_game.players.length} / ${_game.maxPlayer} already joined 👀`
-            );
-            _game.players.forEach((player) => {
-              _logs.push(`${player} joined 🏃‍♂️`);
-            });
-          }
-          setEntryFee(BigNumber.from(_game.entryFee));
-          setMaxPlayer(_game.maxPlayer);
-        } else if (!gameStarted && _game.winner) {
-          _logs = [
-            `Last game has ended with ID: ${_game.id}`,
-            `Winner is: ${_game.winner} 🎉 `,
-            `Waiting for host to start new game....`,
-          ];
-
-          setWinner(_game.winner);
+      const _game = _gameArray.games[0];
+      let _logs = [];
+      // Initialize the logs array and query the graph for current gameID
+      if (_gameStarted) {
+        _logs = [`Game has started with ID: ${_game.id}`];
+        if (_game.players && _game.players.length > 0) {
+          _logs.push(
+            `${_game.players.length} / ${_game.maxPlayers} already joined 👀 `
+          );
+          _game.players.forEach((player) => {
+            _logs.push(`${player} joined 🏃‍♂️`);
+          });
         }
+        setEntryFee(BigNumber.from(_game.entryFee));
+        setMaxPlayers(_game.maxPlayers);
+      } else if (!gameStarted && _game.winner) {
+        _logs = [
+          `Last game has ended with ID: ${_game.id}`,
+          `Winner is: ${_game.winner} 🎉 `,
+          `Waiting for host to start new game....`,
+        ];
 
-        setLogs(_logs);
-        setPlayers(_game.players);
-        forceUpdate();
+        setWinner(_game.winner);
       }
+      setLogs(_logs);
+      setPlayers(_game.players);
       setGameStarted(_gameStarted);
-    } catch (err) {
-      console.error(err);
+      forceUpdate();
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -250,10 +248,10 @@ export default function Home() {
     if (loading) {
       return <button className={styles.button}>Loading...</button>;
     }
-
     // Render when the game has started
+
     if (gameStarted) {
-      if (players.length === maxPlayer) {
+      if (players.length === maxPlayers) {
         return (
           <button className={styles.button} disabled>
             Choosing winner...
@@ -293,7 +291,7 @@ export default function Home() {
             onChange={(e) => {
               // The user will enter the value in ether, we will need to convert
               // it to WEI using parseEther
-              setMaxPlayer(e.target.value ?? 0);
+              setMaxPlayers(e.target.value ?? 0);
             }}
             placeholder="Max players"
           />

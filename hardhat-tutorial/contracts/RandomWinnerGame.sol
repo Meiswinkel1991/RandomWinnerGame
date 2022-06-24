@@ -121,6 +121,8 @@ contract RandomWinnerGame is VRFConsumerBase, Ownable {
         require(sent, "Failed to send Ether");
         // Emit that the game has ended
         emit GameEnded(gameId, winner, requestId);
+        //change game status
+        gameStarted = false;
     }
 
     // Function to receive Ether. msg.data must be empty
